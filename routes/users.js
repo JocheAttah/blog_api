@@ -1,5 +1,6 @@
 const router = require("express").Router();
 const User = require("../models/User");
+const Post = require("../models/Post");
 const bcrypt = require("bcrypt");
 
 //UPDATE
@@ -26,21 +27,23 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-//LOGIN
-router.post("/login", async (req, res) => {
-  try {
-    const user = await User.findOne({ username: req.body.username });
-    !user && res.status(400).json("Wrong Credentials!");
-
-    const validated = await bcrypt.compare(req.body.password, user.password);
-    !validated && res.status(400).json("Wrong Credentials");
-
-    const { password, ...others } = user._doc;
-
-    res.status(200).json(others);
-  } catch (err) {
-    res.status(500).json(err);
+//delete
+router.delete("/:id", async (req, res) => {
+  if (req.body.userId === req.params.id) {
+    try {
+      const user = await User.findById(req.params.id);
+      try {
+        await Post.deleteMany({ username: user.username });
+        await User.findByIdAndDelete(req.params.id);
+        res.status(200).json("User has been deleted");
+      } catch (err) {
+        res.status(500).json(err);
+      }
+    } catch (err) {
+      res.status(404).json("User not found");
+    }
+  } else {
+    res.status(401).json("you can only delete your account.");
   }
 });
-
 module.exports = router;
